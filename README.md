@@ -1,5 +1,5 @@
 # TicTacToeBot
-<a href="t.me/barcek2281"><img src="https://img.shields.io/badge/author_of_this_shit-telegram-blue"></a><br>
+<a href="https://t.me/barcek2281"><img src="https://img.shields.io/badge/author_of_this_shit-telegram-blue"></a><br>
 Телеграм бот для игры крестики нолики в чате, использую шаблонные кнопки
 
 ## Установка
