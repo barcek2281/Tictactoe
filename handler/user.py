@@ -3,25 +3,29 @@ from collections import deque
 
 from aiogram import Router, F
 from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.filters import StateFilter
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import default_state
 
 from buttons import process_buttons_change
 from utils import make_next_move, check_winners, move_position, is_full
 from lexicon import LEXICON
-from database import users, TEMPLATE_USER
+from database import users
 from myfilter import isCells
+from FSMdata import FSMGame
 
 # Router - for user responce
 router = Router()
 
 
 # Самый главные хендлер,  по шаблонным кнопком
-@router.message(isCells())
-async def process_gaming(message: Message):
-    user = users[message.from_user.id]
-    pos:int = len(message.text)-1
-    pg = users[message.from_user.id]["pg"]
-    stack = users[message.from_user.id]["stack"]
-    rStack = users[message.from_user.id]["rStack"]
+@router.message(StateFilter(FSMGame.game_start), isCells())
+async def process_gaming(message: Message, state: FSMContext):
+    user: dict = users[message.from_user.id]
+    pos: int = len(message.text)-1
+    pg: list[int] = users[message.from_user.id]["pg"]
+    stack: deque = users[message.from_user.id]["stack"]
+    rStack: deque = users[message.from_user.id]["rStack"]
     isBot: bool = users[message.from_user.id]["isBot"]
     
     # ход бота
@@ -44,14 +48,16 @@ async def process_gaming(message: Message):
     stack.append(pos)
     result = check_winners(playground=pg, player=1)
 
-    # победа за игрока
+    # победа за игроком
     if result:
         await message.answer(text=LEXICON["BOT_GAME"]["USER_WIN"], reply_markup=process_buttons_change(user=user,  isFinish=True))
+        await state.clear()
         return
     
     # если все клетки полны
     if not isBot and is_full(pg):
         await message.answer(text=LEXICON["BOT_GAME"]["DRAW"], reply_markup=process_buttons_change(user=user, isFinish=True))
+        await state.clear()
         return 
     
     text = text=move_position(pos=pos, is_human=True)
@@ -64,17 +70,20 @@ async def process_gaming(message: Message):
     result = check_winners(playground=pg, player=2)
 
     await message.answer(text=text + '\n' + move_position(pos=bot_answer, is_human=False), reply_markup=process_buttons_change(user=user))
+    # Победа за ботом
     if result:
         await message.answer(text=LEXICON["BOT_GAME"]["BOT_WIN"], reply_markup=process_buttons_change(user=user, isFinish=True))
+        await state.clear()
+        return 
     
     if isBot and is_full(pg):
         await message.answer(text=LEXICON["BOT_GAME"]["DRAW"],reply_markup=process_buttons_change(user=user, isFinish=True))
+        await state.clear()
         return 
     
         
-
-@router.message(F.text == "<<")
-async def process_back_move(message: Message):
+@router.message(StateFilter(FSMGame.game_start), F.text == "<<")
+async def process_back_move(message: Message, state: FSMContext):
     user = users[message.from_user.id]
     pg = users[message.from_user.id]["pg"]
     stack, rStack = users[message.from_user.id]["stack"], users[message.from_user.id]["rStack"]
@@ -86,8 +95,23 @@ async def process_back_move(message: Message):
     await message.answer(text=LEXICON["BOT_GAME"]["BACKWARD"], reply_markup=process_buttons_change(user=user))
 
 
-@router.message(F.text == ">>")
-async def process_back_move(message: Message):
+@router.message(~StateFilter(FSMGame.game_start), F.text == "<<")
+async def process_back_move(message: Message, state: FSMContext):
+    state.set_state(FSMGame.game_start)
+
+    user = users[message.from_user.id]
+    pg = users[message.from_user.id]["pg"]
+    stack, rStack = users[message.from_user.id]["stack"], users[message.from_user.id]["rStack"]
+
+    element = stack.pop()
+    pg[element] = 0
+    rStack.appendleft(element)
+
+    await message.answer(text=LEXICON["BOT_GAME"]["BACKWARD"], reply_markup=process_buttons_change(user=user))
+
+
+@router.message(StateFilter(FSMGame.game_start), F.text == ">>")
+async def process_back_move(message: Message, state: FSMContext):
     user = users[message.from_user.id]
     pg = users[message.from_user.id]["pg"]
     stack, rStack = users[message.from_user.id]["stack"], users[message.from_user.id]["rStack"]

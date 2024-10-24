@@ -1,9 +1,11 @@
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
+from aiogram.fsm.storage.redis import RedisStorage, Redis
 
 from config import load_config
 from handler import user, command_handler, callbacks
 from start_menu import set_bot_menu
+
 
 import logging
 
@@ -32,14 +34,18 @@ if __name__ == '__main__':
         format='%(filename)s:%(lineno)d #%(levelname)-8s '
                '[%(asctime)s] - %(name)s - %(message)s')
 
+    # Хранилище 
+    redis = Redis(host='localhost')
+    storage = RedisStorage(redis=redis)
 
     # сам бот и корневый дистпечер
     bot = Bot(config.tg_bot.token)
-    dp = Dispatcher()
+    dp = Dispatcher(storage=storage)
     
-    
+
     logger.info("Bot is starting")
 
+    # Установка меню
     dp.startup.register(set_bot_menu)
 
     # добавление дочерних роутеров
