@@ -1,7 +1,7 @@
 from aiogram.types import (KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup)
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 
-import cbdata
+import cbdata as cbdata
 from lexicon import LEXICON
 
 yes_or_no = ReplyKeyboardBuilder()

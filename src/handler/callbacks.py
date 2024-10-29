@@ -4,7 +4,7 @@ from aiogram.types import CallbackQuery
 from buttons import buttons
 from database import users
 from lexicon import LEXICON
-import cbdata
+import cbdata as cbdata
 
 router = Router()
 
